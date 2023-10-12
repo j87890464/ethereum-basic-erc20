@@ -15,9 +15,11 @@ contract ERC20 is IERC20 {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
-        totalSupply = _totalSupply * 10**decimals;
-        _balances[msg.sender] = totalSupply;
-        emit Transfer(address(0), msg.sender, totalSupply);
+        if(_totalSupply > 0) {
+            totalSupply = _totalSupply * 10**decimals;
+            _balances[msg.sender] = totalSupply;
+            emit Transfer(address(0), msg.sender, totalSupply);
+        }
     }
 
     function balanceOf(address _owner) public view override returns (uint256) {
@@ -55,11 +57,21 @@ contract ERC20 is IERC20 {
         return _allowances[_owner][_spender];
     }
 
-    function _checkAllowanceSufficiency(address _from, uint256 _value) private view {
+    function _checkAllowanceSufficiency(address _from, uint256 _value) internal view {
         require(_allowances[_from][msg.sender] >= _value, "Allowance is insufficient!");
     }
 
-    function _checkBalanceSufficiency(address _from, uint256 _value) private view {
+    function _checkBalanceSufficiency(address _from, uint256 _value) internal view {
         require(_balances[_from] >= _value, "Balance is insufficient!");
+    }
+
+    function _mint(address _to, uint256 _value) internal {
+        totalSupply += _value;
+        _balances[_to] += _value;
+    }
+
+    function _burn(address _from, uint256 _value) internal {
+        totalSupply -= _value;
+        _balances[_from] -= _value;
     }
 }
