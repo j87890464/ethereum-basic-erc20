@@ -54,6 +54,32 @@ contract WETHTest is Test {
         vm.stopPrank();
     }
 
+    function test_Deposit_MinAmount() public {
+        deal(userA, 1);
+        vm.startPrank(userA);
+        uint beforeBalance = address(weth).balance;
+        weth.deposit{value: 1}();
+        uint afterBalance = address(weth).balance;
+        assertEq((afterBalance - beforeBalance), 1);
+        vm.stopPrank();
+    }
+
+    function test_Deposit_MaxAmount() public {
+        deal(userA, type(uint256).max);
+        vm.startPrank(userA);
+        uint beforeBalance = address(weth).balance;
+        weth.deposit{value: type(uint256).max}();
+        uint afterBalance = address(weth).balance;
+        assertEq((afterBalance - beforeBalance), type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function testFail_Deposit_ZeroAmount() public {
+        vm.startPrank(userA);
+        weth.deposit{value: 0}();
+        vm.stopPrank();
+    }
+
     function test_Withdraw_BurnCorrectAmountToken() public {
         deal(address(weth), userA, 1e18, true);
         deal(address(weth), 1e18);
@@ -89,6 +115,28 @@ contract WETHTest is Test {
         vm.stopPrank();
     }
 
+    function test_Withdraw_MinAmount() public {
+        uint withdrawAmount = 0;
+        uint beforeBalance = userA.balance;
+        vm.startPrank(userA);
+        weth.withdraw(withdrawAmount);
+        uint afterBalance = userA.balance;
+        assertEq((afterBalance - beforeBalance), withdrawAmount);
+        vm.stopPrank();
+    }
+
+    function test_Withdraw_MaxAmount() public {
+        deal(address(weth), userA, type(uint256).max, true);
+        deal(address(weth), type(uint256).max);
+        uint withdrawAmount = type(uint256).max;
+        uint beforeBalance = userA.balance;
+        vm.startPrank(userA);
+        weth.withdraw(withdrawAmount);
+        uint afterBalance = userA.balance;
+        assertEq((afterBalance - beforeBalance), withdrawAmount);
+        vm.stopPrank();
+    }
+
     function test_Transfer_CorrectAmountToken() public {
         deal(address(weth), userA, 1e18, true);
         deal(address(weth), 1e18);
@@ -115,6 +163,41 @@ contract WETHTest is Test {
         vm.stopPrank();
     }
 
+    function test_Transfer_MinAmountToken() public {
+        uint transferAmount = 0;
+        uint userABeforeBalance = weth.balanceOf(userA);
+        uint userBBeforeBalance = weth.balanceOf(userB);
+        vm.startPrank(userA);
+        weth.transfer(userB, transferAmount);
+        uint userAAfterBalance = weth.balanceOf(userA);
+        uint userBAfterBalance = weth.balanceOf(userB);
+        assertEq((userABeforeBalance - userAAfterBalance), transferAmount);
+        assertEq((userBAfterBalance - userBBeforeBalance), transferAmount);
+        vm.stopPrank();
+    }
+
+    function test_Transfer_MaxAmountToken() public {
+        deal(address(weth), userA, type(uint256).max, true);
+        deal(address(weth), type(uint256).max);
+        uint transferAmount = type(uint256).max;
+        uint userABeforeBalance = weth.balanceOf(userA);
+        uint userBBeforeBalance = weth.balanceOf(userB);
+        vm.startPrank(userA);
+        weth.transfer(userB, transferAmount);
+        uint userAAfterBalance = weth.balanceOf(userA);
+        uint userBAfterBalance = weth.balanceOf(userB);
+        assertEq((userABeforeBalance - userAAfterBalance), transferAmount);
+        assertEq((userBAfterBalance - userBBeforeBalance), transferAmount);
+        vm.stopPrank();
+    }
+
+    function testFail_Transfer_InsufficientBalance() public {
+        uint transferAmount = 1;
+        vm.startPrank(userA);
+        weth.transfer(userB, transferAmount);
+        vm.stopPrank();
+    }
+
     function test_Approve_CorrectAllowance() public {
         uint approveAmount = 1e18;
         vm.startPrank(userA);
@@ -129,6 +212,22 @@ contract WETHTest is Test {
         vm.expectEmit();
         emit Approval(userA, userB, approveAmount);
         weth.approve(userB, approveAmount);
+        vm.stopPrank();
+    }
+
+    function test_Approve_MinAllowance() public {
+        uint approveAmount = 0;
+        vm.startPrank(userA);
+        weth.approve(userB, approveAmount);
+        assertEq(weth.allowance(userA, userB), approveAmount);
+        vm.stopPrank();
+    }
+
+    function test_Approve_MaxAllowance() public {
+        uint approveAmount = type(uint256).max;
+        vm.startPrank(userA);
+        weth.approve(userB, approveAmount);
+        assertEq(weth.allowance(userA, userB), approveAmount);
         vm.stopPrank();
     }
 
@@ -160,6 +259,76 @@ contract WETHTest is Test {
         vm.startPrank(userB);
         weth.transferFrom(userA, userB, transferFromAmount);
         assertEq(weth.allowance(userA, userB), expectRemain);
+        vm.stopPrank();
+    }
+
+    function test_TransferFrom_MinAmount() public {
+        uint transferFromAmount = 0;
+        vm.prank(userA);
+        weth.approve(userB, transferFromAmount);
+        vm.startPrank(userB);
+        uint userABeforeBalance = weth.balanceOf(userA);
+        uint userBBeforeBalance = weth.balanceOf(userB);
+        weth.transferFrom(userA, userB, transferFromAmount);
+        uint userBAfterBalance = weth.balanceOf(userB);
+        uint userAAfterBalance = weth.balanceOf(userA);
+        assertEq((userABeforeBalance - userAAfterBalance), transferFromAmount);
+        assertEq((userBAfterBalance - userBBeforeBalance), transferFromAmount);
+        vm.stopPrank();
+    }
+
+    function test_TransferFrom_MaxAmount() public {
+        deal(address(weth), userA, type(uint256).max, true);
+        deal(address(weth), type(uint256).max);
+        uint transferFromAmount = type(uint256).max;
+        vm.prank(userA);
+        weth.approve(userB, transferFromAmount);
+        vm.startPrank(userB);
+        uint userABeforeBalance = weth.balanceOf(userA);
+        uint userBBeforeBalance = weth.balanceOf(userB);
+        weth.transferFrom(userA, userB, transferFromAmount);
+        uint userBAfterBalance = weth.balanceOf(userB);
+        uint userAAfterBalance = weth.balanceOf(userA);
+        assertEq((userABeforeBalance - userAAfterBalance), transferFromAmount);
+        assertEq((userBAfterBalance - userBBeforeBalance), transferFromAmount);
+        vm.stopPrank();
+    }
+
+    function testFail_TransferFrom_InsufficientBalance() public {
+        uint transferFromAmount = 1;
+        vm.prank(userA);
+        weth.approve(userB, transferFromAmount);
+        vm.startPrank(userB);
+        weth.transferFrom(userA, userB, transferFromAmount);
+        vm.stopPrank();
+    }
+
+    function testFail_TransferFrom_InsufficientAllowance() public {
+        deal(address(weth), userA, 1, true);
+        deal(address(weth), 1);
+        uint transferFromAmount = 1;
+        vm.startPrank(userB);
+        weth.transferFrom(userA, userB, transferFromAmount);
+        vm.stopPrank();
+    }
+
+    function test_Receive_InvokeDeposit() public {
+        deal(userA, 100 ether);
+        vm.startPrank(userA);
+        vm.expectEmit();
+        emit Deposit(userA, 1e18);
+        (bool success, ) = address(weth).call{value: 1 ether}("");
+        require(success);
+        vm.stopPrank();
+    }
+
+    function test_Fallback_InvokeDeposit() public {
+        deal(userA, 100 ether);
+        vm.startPrank(userA);
+        vm.expectEmit();
+        emit Deposit(userA, 1e18);
+        (bool success, ) = address(weth).call{value: 1 ether}(abi.encodeWithSignature("notAFunction()", ""));
+        require(success);
         vm.stopPrank();
     }
 }
