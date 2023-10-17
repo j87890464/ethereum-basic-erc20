@@ -74,8 +74,9 @@ contract WETHTest is Test {
         vm.stopPrank();
     }
 
-    function testFail_Deposit_ZeroAmount() public {
+    function test_Fail_Deposit_ZeroAmount() public {
         vm.startPrank(userA);
+        vm.expectRevert("Need Ether > 0.");
         weth.deposit{value: 0}();
         vm.stopPrank();
     }
@@ -191,9 +192,10 @@ contract WETHTest is Test {
         vm.stopPrank();
     }
 
-    function testFail_Transfer_InsufficientBalance() public {
+    function test_Fail_Transfer_InsufficientBalance() public {
         uint transferAmount = 1;
         vm.startPrank(userA);
+        vm.expectRevert("Balance is insufficient!");
         weth.transfer(userB, transferAmount);
         vm.stopPrank();
     }
@@ -294,20 +296,22 @@ contract WETHTest is Test {
         vm.stopPrank();
     }
 
-    function testFail_TransferFrom_InsufficientBalance() public {
+    function test_Fail_TransferFrom_InsufficientBalance() public {
         uint transferFromAmount = 1;
         vm.prank(userA);
         weth.approve(userB, transferFromAmount);
         vm.startPrank(userB);
+        vm.expectRevert("Balance is insufficient!");
         weth.transferFrom(userA, userB, transferFromAmount);
         vm.stopPrank();
     }
 
-    function testFail_TransferFrom_InsufficientAllowance() public {
+    function test_Fail_TransferFrom_InsufficientAllowance() public {
         deal(address(weth), userA, 1, true);
         deal(address(weth), 1);
         uint transferFromAmount = 1;
         vm.startPrank(userB);
+        vm.expectRevert("Allowance is insufficient!");
         weth.transferFrom(userA, userB, transferFromAmount);
         vm.stopPrank();
     }
